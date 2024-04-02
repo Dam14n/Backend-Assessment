@@ -54,7 +54,7 @@ paths:
     get:
       tags:
         - parking-operations
-      operationId: remainingSpots
+      operationId: freeSpots
       description: number of free spots in the parking lot
       responses:
         200:
@@ -68,7 +68,7 @@ paths:
     get:
       tags:
         - parking-operations
-      operationId: remainingSpotsByVehicleType
+      operationId: freeSpotsByVehicleType
       description: number of free spots in the parking lot by a given vehicle type
       parameters:
         - description: Vehicle type

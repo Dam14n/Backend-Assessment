@@ -3,6 +3,8 @@ package assessment.parkinglot;
 import assessment.parkinglot.api.dto.VehicleTypeRequest;
 import assessment.parkinglot.configuration.ParkingLotConfigurationProperties;
 import assessment.parkinglot.controller.ParkingOperationsApiDelegate;
+import assessment.parkinglot.model.SpotType;
+import assessment.parkinglot.repository.SpotRepository;
 import assessment.parkinglot.service.exception.NoFreeSpotsException;
 import assessment.parkinglot.service.exception.VehicleIdentificationNotFoundException;
 import org.junit.jupiter.api.Assertions;
@@ -21,6 +23,9 @@ class ParkingLotServiceApplicationTests {
 
 	@Autowired
 	private ParkingLotConfigurationProperties parkingLotConfigurationProperties;
+
+	@Autowired
+	private SpotRepository spotRepository;
 
 	private ResponseEntity<assessment.parkinglot.api.dto.ParkResponse> parkVehicle(VehicleTypeRequest type) throws NoFreeSpotsException {
 		var parkVehicle = new assessment.parkinglot.api.dto.ParkVehicle();
@@ -45,6 +50,23 @@ class ParkingLotServiceApplicationTests {
 	void parkAVan() throws NoFreeSpotsException {
 		var response = parkVehicle(VehicleTypeRequest.VAN);
 		Assertions.assertNotNull(response);
+	}
+
+	@Test
+	void carCanParkInRegularSpot() throws NoFreeSpotsException {
+		for (int i = 0; i < parkingLotConfigurationProperties.getMotorcycle(); i++) {
+			this.parkVehicle(VehicleTypeRequest.MOTORCYCLE);
+		}
+
+		for (int i = 0; i < parkingLotConfigurationProperties.getCompact(); i++) {
+			this.parkVehicle(VehicleTypeRequest.CAR);
+		}
+
+		var response = this.parkVehicle(VehicleTypeRequest.CAR);
+		Assertions.assertNotNull(response.getBody());
+
+		var spot = this.spotRepository.findAllById(response.getBody().getSpotIds()).stream().findFirst().orElseThrow();
+		Assertions.assertEquals(SpotType.REGULAR, spot.getType());
 	}
 
 	@Test
@@ -114,7 +136,7 @@ class ParkingLotServiceApplicationTests {
 
 	@Test
 	void remainingSpots() {
-		var freeSpotsResponse = this.parkingService.remainingSpots();
+		var freeSpotsResponse = this.parkingService.freeSpots();
 		Assertions.assertEquals(25, freeSpotsResponse.getBody().getFreeSpots());
 	}
 
@@ -128,19 +150,19 @@ class ParkingLotServiceApplicationTests {
 			this.parkVehicle(VehicleTypeRequest.CAR);
 		}
 
-		var freeSpotsResponse = this.parkingService.remainingSpots();
+		var freeSpotsResponse = this.parkingService.freeSpots();
 		Assertions.assertEquals(parkingLotConfigurationProperties.getRegular(), freeSpotsResponse.getBody().getFreeSpots());
 	}
 
 	@Test
 	void remainingSpotsByVehicleType() {
-		var freeSpotsMotorcycleResponse = this.parkingService.remainingSpotsByVehicleType(VehicleTypeRequest.MOTORCYCLE);
+		var freeSpotsMotorcycleResponse = this.parkingService.freeSpotsByVehicleType(VehicleTypeRequest.MOTORCYCLE);
 		Assertions.assertEquals(10, freeSpotsMotorcycleResponse.getBody().getFreeSpots());
 
-		var freeSpotsCarResponse = this.parkingService.remainingSpotsByVehicleType(VehicleTypeRequest.CAR);
+		var freeSpotsCarResponse = this.parkingService.freeSpotsByVehicleType(VehicleTypeRequest.CAR);
 		Assertions.assertEquals(15, freeSpotsCarResponse.getBody().getFreeSpots());
 
-		var freeSpotsVanResponse = this.parkingService.remainingSpotsByVehicleType(VehicleTypeRequest.VAN);
+		var freeSpotsVanResponse = this.parkingService.freeSpotsByVehicleType(VehicleTypeRequest.VAN);
 		Assertions.assertEquals(3, freeSpotsVanResponse.getBody().getFreeSpots());
 	}
 
@@ -155,13 +177,13 @@ class ParkingLotServiceApplicationTests {
 			this.parkVehicle(VehicleTypeRequest.CAR);
 		}
 
-		var freeSpotsMotorcycleResponse = this.parkingService.remainingSpotsByVehicleType(VehicleTypeRequest.MOTORCYCLE);
+		var freeSpotsMotorcycleResponse = this.parkingService.freeSpotsByVehicleType(VehicleTypeRequest.MOTORCYCLE);
 		Assertions.assertEquals(5, freeSpotsMotorcycleResponse.getBody().getFreeSpots());
 
-		var freeSpotsCarResponse = this.parkingService.remainingSpotsByVehicleType(VehicleTypeRequest.CAR);
+		var freeSpotsCarResponse = this.parkingService.freeSpotsByVehicleType(VehicleTypeRequest.CAR);
 		Assertions.assertEquals(5, freeSpotsCarResponse.getBody().getFreeSpots());
 
-		var freeSpotsVanResponse = this.parkingService.remainingSpotsByVehicleType(VehicleTypeRequest.VAN);
+		var freeSpotsVanResponse = this.parkingService.freeSpotsByVehicleType(VehicleTypeRequest.VAN);
 		Assertions.assertEquals(1, freeSpotsVanResponse.getBody().getFreeSpots());
 	}
 

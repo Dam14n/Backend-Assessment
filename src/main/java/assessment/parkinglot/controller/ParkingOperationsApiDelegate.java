@@ -6,10 +6,10 @@ import assessment.parkinglot.api.dto.ParkResponse;
 import assessment.parkinglot.api.dto.ParkVehicle;
 import assessment.parkinglot.api.dto.VehicleTypeRequest;
 import assessment.parkinglot.model.Spot;
-import assessment.parkinglot.model.SpotType;
 import assessment.parkinglot.model.VehicleType;
 import assessment.parkinglot.provider.VehicleProvider;
 import assessment.parkinglot.repository.SpotRepository;
+import assessment.parkinglot.service.SpotService;
 import assessment.parkinglot.service.exception.NoFreeSpotsException;
 import assessment.parkinglot.service.exception.VehicleIdentificationNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -26,33 +25,12 @@ public class ParkingOperationsApiDelegate implements assessment.parkinglot.api.P
 
 	private final SpotRepository spotRepository;
 	private final VehicleProvider vehicleProvider;
-
-	private List<SpotType> spotTypeByVehicleType(VehicleType vehicleType) {
-		return switch (vehicleType) {
-			case MOTORCYCLE -> List.of(SpotType.MOTORCYCLE);
-			case CAR -> List.of(SpotType.COMPACT, SpotType.REGULAR);
-			case VAN -> List.of(SpotType.REGULAR);
-		};
-	}
-
+	private final List<SpotService> spotServiceList;
 
 	@Override
 	public ResponseEntity<ParkResponse> parkVehicle(ParkVehicle parkVehicle) throws NoFreeSpotsException {
 		var vehicleType = VehicleType.valueOf(parkVehicle.getVehicleType().getValue());
-		var spotTypes = this.spotTypeByVehicleType(vehicleType);
-		List<Spot> spots = new ArrayList<>();
-
-		if (VehicleType.VAN.equals(vehicleType)) {
-			spots = this.spotRepository.findTop3ByVehicleIsNullAndTypeIn(spotTypes);
-			if (spots.size() < 3) {
-				throw new NoFreeSpotsException();
-			}
-		} else {
-			var singleSpot = this.spotRepository
-					.findFirstByVehicleIsNullAndTypeIn(spotTypes)
-					.orElseThrow(NoFreeSpotsException::new);
-			spots.add(singleSpot);
-		}
+		var spots = this.getSpotService(vehicleType).getFreeSpots(vehicleType);
 
 		var vehicle = this.vehicleProvider.provideVehicle(vehicleType, parkVehicle.getIdentification());
 		spots.forEach(spot -> spot.setVehicle(vehicle));
@@ -63,8 +41,15 @@ public class ParkingOperationsApiDelegate implements assessment.parkinglot.api.P
 		return ResponseEntity.ok(reponse);
 	}
 
+	private SpotService getSpotService(VehicleType vehicleType) {
+		return this.spotServiceList.stream()
+				.filter(spotService -> spotService.supportVehicleType(vehicleType))
+				.findFirst()
+				.orElseThrow(InternalError::new);
+	}
+
 	@Override
-	public ResponseEntity<FreeSpotsResponse> remainingSpots() {
+	public ResponseEntity<FreeSpotsResponse> freeSpots() {
 		var count = this.spotRepository.countByVehicleIsNull();
 
 		var reponse = new FreeSpotsResponse();
@@ -73,16 +58,9 @@ public class ParkingOperationsApiDelegate implements assessment.parkinglot.api.P
 	}
 
 	@Override
-	public ResponseEntity<FreeSpotsResponse> remainingSpotsByVehicleType(VehicleTypeRequest vehicleType) {
+	public ResponseEntity<FreeSpotsResponse> freeSpotsByVehicleType(VehicleTypeRequest vehicleType) {
 		var vehicleTypeModel = VehicleType.valueOf(vehicleType.getValue());
-		var spotTypes = this.spotTypeByVehicleType(vehicleTypeModel);
-		var count = this.spotRepository.countByVehicleIsNullAndTypeIn(spotTypes);
-
-
-		if (VehicleType.VAN.equals(vehicleTypeModel)) {
-			count = count / 3;
-		}
-
+		var count = this.getSpotService(vehicleTypeModel).countFreeSpots(vehicleTypeModel);
 		var reponse = new FreeSpotsResponse();
 		reponse.setFreeSpots(count);
 		return ResponseEntity.ok(reponse);
