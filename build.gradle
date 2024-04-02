@@ -1,0 +1,75 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.4'
+    id 'io.spring.dependency-management' version '1.1.4'
+    id 'io.freefair.lombok' version "8.4"
+    id "org.openapi.generator" version "7.4.0"
+}
+
+group = 'assessment'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '21'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // Added during development
+    compileOnly 'org.projectlombok:lombok'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+}
+
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+compileJava {
+    dependsOn "generateAPI"
+}
+
+task generateAPI(type: GenerateTask) {
+    generatorName = "spring"
+    inputSpec = "$rootDir/specs/openapi.yaml".toString()
+    outputDir = "$buildDir/generated".toString()
+    modelPackage = "assessment.parkinglot.api.dto"
+    apiPackage = "assessment.parkinglot.api"
+    additionalProperties = [
+            artifactId             : "parking-service",
+            openApiNullable        : "false",
+            generateApis           : "true",
+            generateSupportingFiles: "true",
+    ]
+    configOptions = [
+            unhandledException: "true",
+            hideGenerationTimestamp: "true",
+            useJakartaEe           : "true",
+            sourceFolder           : "src/gen/java/main",
+            useSpringController    : "true",
+            dateLibrary            : "java8",
+            delegatePattern        : "true",
+            useTags                : "true",
+    ]
+    library = "spring-boot"
+    generateApiTests = false
+    generateModelTests = false
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += ["$buildDir/generated/src/main".toString(), "$buildDir/generated/src/gen/java/main/assessment".toString()]
+        }
+    }
+}

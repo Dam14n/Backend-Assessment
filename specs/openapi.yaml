@@ -1,0 +1,134 @@
+openapi: 3.0.1
+info:
+  title: Parking Lot
+  version: 0.0.1-SNAPSHOT
+
+servers:
+  - url: http://localhost:8080/API
+    description: local
+
+tags:
+  - name: parking-operations
+    description: Parking Operations
+
+paths:
+  /park:
+    post:
+      tags:
+        - parking-operations
+      operationId: parkVehicle
+      description: park a vehicle in the parking lot if there is free spots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkVehicle'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkResponse'
+
+  /leave:
+    post:
+      tags:
+        - parking-operations
+      operationId: vehicleLeave
+      description: a vehicle leave the parking lot
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParkLeave'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkVehicle'
+
+  /free:
+    get:
+      tags:
+        - parking-operations
+      operationId: remainingSpots
+      description: number of free spots in the parking lot
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeSpotsResponse'
+
+  /free/{vehicleType}:
+    get:
+      tags:
+        - parking-operations
+      operationId: remainingSpotsByVehicleType
+      description: number of free spots in the parking lot by a given vehicle type
+      parameters:
+        - description: Vehicle type
+          example: CAR
+          in: path
+          name: vehicleType
+          required: true
+          schema:
+            $ref: '#/components/schemas/VehicleTypeRequest'
+          style: simple
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FreeSpotsResponse'
+
+components:
+  schemas:
+    VehicleTypeRequest:
+      type: string
+      enum:
+        - MOTORCYCLE
+        - CAR
+        - VAN
+    FreeSpotsResponse:
+      type: object
+      properties:
+        freeSpots:
+          type: integer
+          format: int64
+          description: amount of free spots in the current parking lot
+    ParkResponse:
+      type: object
+      properties:
+        spotIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Spot position in the parking lot
+    ParkLeave:
+      type: object
+      properties:
+        identification:
+          type: string
+          description: Vehicle identification
+        spotIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Spot positions in the parking lot
+    ParkVehicle:
+      type: object
+      properties:
+        identification:
+          type: string
+          description: Vehicle identification
+        vehicleType:
+          $ref: '#/components/schemas/VehicleTypeRequest'
+          description: Type of the vehicle that it is trying to park

@@ -1,0 +1,11 @@
+spring:
+  jpa:
+    open-in-view: false
+    defer-datasource-initialization: true
+
+
+parking:
+  spots:
+    motorcycle: 10
+    compact: 6
+    regular: 9
