@@ -1,7 +1,7 @@
 package assessment.parkinglot.controller;
 
 import assessment.parkinglot.api.dto.FreeSpotsResponse;
-import assessment.parkinglot.api.dto.ParkLeave;
+import assessment.parkinglot.api.dto.ParkLeaveRequest;
 import assessment.parkinglot.api.dto.ParkResponse;
 import assessment.parkinglot.api.dto.ParkVehicle;
 import assessment.parkinglot.api.dto.VehicleTypeRequest;
@@ -68,9 +68,9 @@ public class ParkingOperationsApiDelegate implements assessment.parkinglot.api.P
 
 	@Override
 	@Transactional
-	public ResponseEntity<ParkVehicle> vehicleLeave(ParkLeave parkLeave) throws VehicleIdentificationNotFoundException {
+	public ResponseEntity<ParkVehicle> vehicleLeave(ParkLeaveRequest parkLeave) throws VehicleIdentificationNotFoundException {
 		var spot = this.spotRepository
-				.findFirstByVehicleIdentificationIs(parkLeave.getIdentification())
+				.findFirstByVehicleIdentificationIsAndIdIn(parkLeave.getIdentification(), parkLeave.getSpotIds())
 				.orElseThrow(VehicleIdentificationNotFoundException::new);
 
 		var vehicle = spot.getVehicle();

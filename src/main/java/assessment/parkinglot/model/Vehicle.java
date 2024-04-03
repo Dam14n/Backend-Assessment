@@ -11,9 +11,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Setter
 @Getter
 @Entity(name = "vehicles")
@@ -29,10 +32,6 @@ public abstract class Vehicle {
 
 	public Vehicle(String identification) {
 		this.identification = identification;
-	}
-
-	protected Vehicle() {
-
 	}
 
 	@Enumerated(EnumType.STRING)

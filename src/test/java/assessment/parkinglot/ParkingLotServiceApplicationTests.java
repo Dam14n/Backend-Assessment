@@ -1,5 +1,6 @@
 package assessment.parkinglot;
 
+import assessment.parkinglot.api.dto.ParkLeaveRequest;
 import assessment.parkinglot.api.dto.VehicleTypeRequest;
 import assessment.parkinglot.configuration.ParkingLotConfigurationProperties;
 import assessment.parkinglot.controller.ParkingOperationsApiDelegate;
@@ -13,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
+
+import java.util.List;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -93,7 +96,7 @@ class ParkingLotServiceApplicationTests {
 		parkVehicle.setIdentification("AF111PS");
 		var response = this.parkingService.parkVehicle(parkVehicle);
 
-		var parkLeave = new assessment.parkinglot.api.dto.ParkLeave();
+		var parkLeave = new ParkLeaveRequest();
 		parkLeave.setIdentification(parkVehicle.getIdentification());
 		parkLeave.setSpotIds(response.getBody().getSpotIds());
 		var parkVehicleLeave = this.parkingService.vehicleLeave(parkLeave).getBody();
@@ -103,13 +106,13 @@ class ParkingLotServiceApplicationTests {
 	}
 
 	@Test
-	void carLeavesParkSpot() throws NoFreeSpotsException, VehicleIdentificationNotFoundException  {
+	void carLeavesParkSpot() throws NoFreeSpotsException, VehicleIdentificationNotFoundException {
 		var parkVehicle = new assessment.parkinglot.api.dto.ParkVehicle();
 		parkVehicle.setVehicleType(VehicleTypeRequest.CAR);
 		parkVehicle.setIdentification("AF111PS");
 		var response = this.parkingService.parkVehicle(parkVehicle);
 
-		var parkLeave = new assessment.parkinglot.api.dto.ParkLeave();
+		var parkLeave = new ParkLeaveRequest();
 		parkLeave.setIdentification(parkVehicle.getIdentification());
 		parkLeave.setSpotIds(response.getBody().getSpotIds());
 		var parkVehicleLeave = this.parkingService.vehicleLeave(parkLeave).getBody();
@@ -125,7 +128,7 @@ class ParkingLotServiceApplicationTests {
 		parkVehicle.setIdentification("AF111PS");
 		var response = this.parkingService.parkVehicle(parkVehicle);
 
-		var parkLeave = new assessment.parkinglot.api.dto.ParkLeave();
+		var parkLeave = new ParkLeaveRequest();
 		parkLeave.setIdentification(parkVehicle.getIdentification());
 		parkLeave.setSpotIds(response.getBody().getSpotIds());
 		var parkVehicleLeave = this.parkingService.vehicleLeave(parkLeave).getBody();
@@ -187,4 +190,105 @@ class ParkingLotServiceApplicationTests {
 		Assertions.assertEquals(1, freeSpotsVanResponse.getBody().getFreeSpots());
 	}
 
+
+	@Test
+	void vanCanONLYParkIn3FirstFollowedRegularSpot() throws NoFreeSpotsException, VehicleIdentificationNotFoundException {
+		for (int i = 0; i < parkingLotConfigurationProperties.getMotorcycle(); i++) {
+			this.parkVehicle(VehicleTypeRequest.MOTORCYCLE);
+		}
+
+		for (int i = 0; i < parkingLotConfigurationProperties.getCompact() + parkingLotConfigurationProperties.getRegular(); i++) {
+			this.parkVehicle(VehicleTypeRequest.CAR);
+		}
+
+		var parkLeaveRequest = new ParkLeaveRequest();
+		parkLeaveRequest.setIdentification("AF111PS");
+		parkLeaveRequest.setSpotIds(List.of(17L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(18L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(19L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+
+		var response = this.parkVehicle(VehicleTypeRequest.VAN);
+		Assertions.assertNotNull(response.getBody());
+
+		var spot = this.spotRepository.findAllById(response.getBody().getSpotIds()).stream().findFirst().orElseThrow();
+		Assertions.assertEquals(SpotType.REGULAR, spot.getType());
+	}
+
+	@Test
+	void vanCanONLYParkIn3LastFollowedRegularSpot() throws NoFreeSpotsException, VehicleIdentificationNotFoundException {
+		for (int i = 0; i < parkingLotConfigurationProperties.getMotorcycle(); i++) {
+			this.parkVehicle(VehicleTypeRequest.MOTORCYCLE);
+		}
+
+		for (int i = 0; i < parkingLotConfigurationProperties.getCompact() + parkingLotConfigurationProperties.getRegular(); i++) {
+			this.parkVehicle(VehicleTypeRequest.CAR);
+		}
+
+		var parkLeaveRequest = new ParkLeaveRequest();
+		parkLeaveRequest.setIdentification("AF111PS");
+		parkLeaveRequest.setSpotIds(List.of(22L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(23L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(24L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+
+		var response = this.parkVehicle(VehicleTypeRequest.VAN);
+		Assertions.assertNotNull(response.getBody());
+
+		var spot = this.spotRepository.findAllById(response.getBody().getSpotIds()).stream().findFirst().orElseThrow();
+		Assertions.assertEquals(SpotType.REGULAR, spot.getType());
+	}
+
+	@Test
+	void vanCanONLYParkInFollowedRegularSpot() throws NoFreeSpotsException, VehicleIdentificationNotFoundException {
+		for (int i = 0; i < parkingLotConfigurationProperties.getMotorcycle(); i++) {
+			this.parkVehicle(VehicleTypeRequest.MOTORCYCLE);
+		}
+
+		for (int i = 0; i < parkingLotConfigurationProperties.getCompact() + parkingLotConfigurationProperties.getRegular(); i++) {
+			this.parkVehicle(VehicleTypeRequest.CAR);
+		}
+
+		var parkLeaveRequest = new ParkLeaveRequest();
+		parkLeaveRequest.setIdentification("AF111PS");
+		parkLeaveRequest.setSpotIds(List.of(19L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(20L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(21L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+
+		var response = this.parkVehicle(VehicleTypeRequest.VAN);
+		Assertions.assertNotNull(response.getBody());
+
+		var spot = this.spotRepository.findAllById(response.getBody().getSpotIds()).stream().findFirst().orElseThrow();
+		Assertions.assertEquals(SpotType.REGULAR, spot.getType());
+	}
+
+
+	@Test
+	void vanCannotParkDueToNotFollowedRegularSpot() throws NoFreeSpotsException, VehicleIdentificationNotFoundException {
+		for (int i = 0; i < parkingLotConfigurationProperties.getMotorcycle(); i++) {
+			this.parkVehicle(VehicleTypeRequest.MOTORCYCLE);
+		}
+
+		for (int i = 0; i < parkingLotConfigurationProperties.getCompact() + parkingLotConfigurationProperties.getRegular(); i++) {
+			this.parkVehicle(VehicleTypeRequest.CAR);
+		}
+
+		var parkLeaveRequest = new ParkLeaveRequest();
+		parkLeaveRequest.setIdentification("AF111PS");
+		parkLeaveRequest.setSpotIds(List.of(18L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(20L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+		parkLeaveRequest.setSpotIds(List.of(22L));
+		this.parkingService.vehicleLeave(parkLeaveRequest);
+
+		Assertions.assertThrows(NoFreeSpotsException.class, () -> this.parkVehicle(VehicleTypeRequest.VAN));
+	}
 }

@@ -7,14 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface SpotRepository extends JpaRepository<Spot, Long> {
-
-	List<Spot> findTop3ByVehicleIsNullAndTypeIn(List<SpotType> spotTypeList);
+public interface SpotRepository extends JpaRepository<Spot, Long>, VanSpotRepository {
 
 	Optional<Spot> findFirstByVehicleIsNullAndTypeIn(List<SpotType> spotTypeList);
 
-
-	Optional<Spot> findFirstByVehicleIdentificationIs(String identification);
+	Optional<Spot> findFirstByVehicleIdentificationIsAndIdIn(String identification, List<Long> spotIdList);
 
 	long countByVehicleIsNull();
 

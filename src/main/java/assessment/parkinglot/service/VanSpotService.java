@@ -1,5 +1,6 @@
 package assessment.parkinglot.service;
 
+import assessment.parkinglot.model.QSpot;
 import assessment.parkinglot.model.Spot;
 import assessment.parkinglot.model.VehicleType;
 import assessment.parkinglot.repository.SpotRepository;
@@ -17,8 +18,7 @@ public class VanSpotService implements SpotService {
 
 	@Override
 	public List<Spot> getFreeSpots(VehicleType vehicleType) throws NoFreeSpotsException {
-		var spotTypes = this.spotTypeByVehicleType(vehicleType);
-		var spots = this.spotRepository.findTop3ByVehicleIsNullAndTypeIn(spotTypes);
+		var spots = this.spotRepository.findFreeSpotsForVanVehicle();
 		if (spots.size() < vehicleType.getSpotsSize()) {
 			throw new NoFreeSpotsException();
 		}
